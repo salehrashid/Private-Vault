@@ -1,0 +1,8 @@
+Package: password-manager
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Saleh Rashid <saleh.rashid.b@gmail.com>
+Description: Password Manager built with Flutter
+Depends: libgtk-3-0
