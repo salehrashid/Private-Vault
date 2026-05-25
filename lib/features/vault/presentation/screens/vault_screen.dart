@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/responsive_breakpoints.dart';
+import '../../../../core/errors/error_messages.dart';
 import '../../domain/password_entry.dart';
 import '../controllers/vault_providers.dart';
 import '../widgets/entry_editor.dart';
@@ -18,7 +19,7 @@ class VaultScreen extends ConsumerWidget {
       if (error != null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFacingErrorMessage(error))));
       }
     });
 
@@ -73,12 +74,48 @@ class _MobileVault extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFolderId = ref.watch(selectedFolderIdProvider);
     final selectedEntry = ref.watch(selectedEntryProvider);
+    final canExit = selectedFolderId == null && selectedEntry == null;
 
-    if (selectedEntry != null && selectedFolderId != null) {
-      return EntryEditor(folderId: selectedFolderId, entry: selectedEntry);
+    return PopScope<void>(
+      canPop: canExit,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          return;
+        }
+        if (selectedEntry != null) {
+          ref.read(selectedEntryProvider.notifier).state = null;
+          return;
+        }
+        if (selectedFolderId != null) {
+          ref.read(selectedFolderIdProvider.notifier).state = null;
+        }
+      },
+      child: _MobileVaultBody(
+        selectedFolderId: selectedFolderId,
+        selectedEntry: selectedEntry,
+      ),
+    );
+  }
+}
+
+class _MobileVaultBody extends ConsumerWidget {
+  const _MobileVaultBody({
+    required this.selectedFolderId,
+    required this.selectedEntry,
+  });
+
+  final String? selectedFolderId;
+  final PasswordEntry? selectedEntry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final folderId = selectedFolderId;
+
+    if (selectedEntry != null && folderId != null) {
+      return EntryEditor(folderId: folderId, entry: selectedEntry);
     }
 
-    if (selectedFolderId != null) {
+    if (folderId != null) {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
@@ -92,12 +129,12 @@ class _MobileVault extends ConsumerWidget {
             IconButton(
               tooltip: 'New entry',
               onPressed: () => ref.read(selectedEntryProvider.notifier).state =
-                  _newEntry(selectedFolderId),
+                  _newEntry(folderId),
               icon: const Icon(Icons.add),
             ),
           ],
         ),
-        body: PasswordList(folderId: selectedFolderId),
+        body: PasswordList(folderId: folderId, showAppBar: false),
       );
     }
 

@@ -1,22 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/error_messages.dart';
 import '../../domain/password_entry.dart';
 import '../controllers/vault_providers.dart';
 
 class PasswordList extends ConsumerWidget {
-  const PasswordList({super.key, required this.folderId});
+  const PasswordList({
+    super.key,
+    required this.folderId,
+    this.showAppBar = true,
+  });
 
   final String folderId;
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(folderEntriesProvider(folderId));
     final selected = ref.watch(selectedEntryProvider);
 
+    final body = entries.when(
+      data: (items) {
+        if (items.isEmpty) {
+          return const Center(child: Text('No passwords in this folder'));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(12),
+          itemBuilder: (context, index) {
+            final entry = items[index];
+            return ListTile(
+              selected: selected?.id == entry.id,
+              selectedTileColor: Theme.of(
+                context,
+              ).colorScheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              leading: CircleAvatar(
+                child: Text(
+                  entry.title.isEmpty
+                      ? '?'
+                      : entry.title.characters.first.toUpperCase(),
+                ),
+              ),
+              title: Text(
+                entry.title.isEmpty ? 'Untitled entry' : entry.title,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(entry.username, overflow: TextOverflow.ellipsis),
+              onTap: () =>
+                  ref.read(selectedEntryProvider.notifier).state = entry,
+            );
+          },
+          separatorBuilder: (context, index) => const SizedBox(height: 6),
+          itemCount: items.length,
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text(userFacingErrorMessage(error))),
+    );
+
+    if (!showAppBar) {
+      return body;
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Passwordsss'),
+        title: const Text('Passwords'),
         actions: [
           IconButton(
             tooltip: 'New entry',
@@ -26,46 +77,7 @@ class PasswordList extends ConsumerWidget {
           ),
         ],
       ),
-      body: entries.when(
-        data: (items) {
-          if (items.isEmpty) {
-            return const Center(child: Text('No passwords in this folder'));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemBuilder: (context, index) {
-              final entry = items[index];
-              return ListTile(
-                selected: selected?.id == entry.id,
-                selectedTileColor: Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                leading: CircleAvatar(
-                  child: Text(
-                    entry.title.isEmpty
-                        ? '?'
-                        : entry.title.characters.first.toUpperCase(),
-                  ),
-                ),
-                title: Text(
-                  entry.title.isEmpty ? 'Untitled entry' : entry.title,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(entry.username, overflow: TextOverflow.ellipsis),
-                onTap: () =>
-                    ref.read(selectedEntryProvider.notifier).state = entry,
-              );
-            },
-            separatorBuilder: (context, index) => const SizedBox(height: 6),
-            itemCount: items.length,
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text(error.toString())),
-      ),
+      body: body,
     );
   }
 }

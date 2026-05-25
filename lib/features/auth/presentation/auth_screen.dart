@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/error_messages.dart';
 import '../../../firebase/firebase_config.dart';
 import 'auth_controller.dart';
 
@@ -30,7 +31,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (error != null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFacingErrorMessage(error))));
       }
     });
 

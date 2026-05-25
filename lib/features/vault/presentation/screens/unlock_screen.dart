@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/error_messages.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../controllers/vault_providers.dart';
 
@@ -27,7 +28,7 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
       if (error != null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFacingErrorMessage(error))));
       }
     });
 

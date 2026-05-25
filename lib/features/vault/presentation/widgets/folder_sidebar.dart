@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/error_messages.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../../domain/vault_folder.dart';
 import '../controllers/vault_providers.dart';
@@ -69,7 +70,8 @@ class FolderSidebar extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text(error.toString())),
+              error: (error, _) =>
+                  Center(child: Text(userFacingErrorMessage(error))),
             ),
           ),
         ],

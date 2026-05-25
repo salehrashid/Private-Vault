@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const appBarColor = Color(0xFF4A5C92);
+
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF2563EB),
+      seedColor: appBarColor,
       brightness: Brightness.light,
     );
 
@@ -27,8 +29,16 @@ class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: appBarColor,
+        foregroundColor: Colors.white,
+        surfaceTintColor: appBarColor,
+        iconTheme: IconThemeData(color: Colors.white),
+        actionsIconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

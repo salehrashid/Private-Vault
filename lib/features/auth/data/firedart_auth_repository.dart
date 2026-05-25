@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:firedart/firedart.dart' as fd;
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/errors/auth_error_mapper.dart';
 import '../../../firebase/firebase_config.dart';
 import '../domain/auth_repository.dart';
 import '../domain/auth_user.dart';
+import 'secure_auth_token_store.dart';
 
 class FiredartAuthRepository implements AuthRepository {
   fd.FirebaseAuth get _auth {
@@ -37,23 +39,38 @@ class FiredartAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> signIn(String email, String password) async {
-    final user = await _auth.signIn(email.trim(), password);
-    return AuthUser(uid: user.id, email: user.email ?? email.trim());
+    return _mapAuthErrors(() async {
+      final normalizedEmail = email.trim();
+      final user = await _auth.signIn(normalizedEmail, password);
+      return AuthUser(uid: user.id, email: user.email ?? normalizedEmail);
+    });
   }
 
   @override
   Future<AuthUser> signUp(String email, String password) async {
-    final user = await _auth.signUp(email.trim(), password);
-    return AuthUser(uid: user.id, email: user.email ?? email.trim());
+    return _mapAuthErrors(() async {
+      final normalizedEmail = email.trim();
+      final user = await _auth.signUp(normalizedEmail, password);
+      return AuthUser(uid: user.id, email: user.email ?? normalizedEmail);
+    });
   }
 
   @override
   Future<void> sendPasswordReset(String email) {
-    return _auth.resetPassword(email.trim());
+    return _mapAuthErrors(() => _auth.resetPassword(email.trim()));
   }
 
   @override
   Future<void> signOut() async {
     _auth.signOut();
+    await SecureAuthTokenStore.clearPersistedSession();
+  }
+
+  Future<T> _mapAuthErrors<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (error) {
+      throw AuthErrorMapper.toAppException(error);
+    }
   }
 }

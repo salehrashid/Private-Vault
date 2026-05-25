@@ -1,6 +1,7 @@
 import 'package:firedart/firedart.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../features/auth/data/secure_auth_token_store.dart';
 import 'firebase_config.dart';
 
 class FirebaseBootstrap {
@@ -14,7 +15,8 @@ class FirebaseBootstrap {
       return;
     }
 
-    FirebaseAuth.initialize(config.webApiKey, VolatileStore());
+    final tokenStore = await SecureAuthTokenStore.create();
+    FirebaseAuth.initialize(config.webApiKey, tokenStore);
     Firestore.initialize(config.projectId);
     _initialized = true;
   }
