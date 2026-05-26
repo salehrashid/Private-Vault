@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_messages.dart';
 import '../../../auth/presentation/auth_controller.dart';
+import '../../../../app/responsive_breakpoints.dart';
 import '../../domain/vault_folder.dart';
 import '../controllers/vault_providers.dart';
 
@@ -46,7 +47,9 @@ class FolderSidebar extends ConsumerWidget {
           Expanded(
             child: folders.when(
               data: (items) {
-                if (items.isNotEmpty && selected == null) {
+                final isDesktop = MediaQuery.sizeOf(context).width >=
+                    ResponsiveBreakpoints.desktop;
+                if (isDesktop && items.isNotEmpty && selected == null) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     ref.read(selectedFolderIdProvider.notifier).state =
                         items.first.id;
@@ -124,13 +127,50 @@ Future<void> showFolderDialog(
   WidgetRef ref, {
   VaultFolder? folder,
 }) async {
-  final controller = TextEditingController(text: folder?.name ?? '');
   final name = await showDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(folder == null ? 'New folder' : 'Rename folder'),
+    builder: (context) => _FolderDialog(folder: folder),
+  );
+  
+  if (name == null || name.isEmpty) {
+    return;
+  }
+  
+  final vault = ref.read(vaultControllerProvider.notifier);
+  folder == null
+      ? await vault.createFolder(name)
+      : await vault.renameFolder(folder.id, name);
+}
+
+class _FolderDialog extends StatefulWidget {
+  const _FolderDialog({this.folder});
+  final VaultFolder? folder;
+
+  @override
+  State<_FolderDialog> createState() => _FolderDialogState();
+}
+
+class _FolderDialogState extends State<_FolderDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.folder?.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.folder == null ? 'New folder' : 'Rename folder'),
       content: TextField(
-        controller: controller,
+        controller: _controller,
         autofocus: true,
         decoration: const InputDecoration(labelText: 'Folder name'),
       ),
@@ -140,18 +180,10 @@ Future<void> showFolderDialog(
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
           child: const Text('Save'),
         ),
       ],
-    ),
-  );
-  controller.dispose();
-  if (name == null || name.isEmpty) {
-    return;
+    );
   }
-  final vault = ref.read(vaultControllerProvider.notifier);
-  folder == null
-      ? await vault.createFolder(name)
-      : await vault.renameFolder(folder.id, name);
 }
