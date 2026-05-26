@@ -168,6 +168,8 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
     if (base == null || _title.text.trim().isEmpty) {
       return;
     }
+    
+    final isNew = base.id.isEmpty;
     final entry = base.copyWith(
       folderId: widget.folderId,
       title: _title.text,
@@ -177,7 +179,15 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
       notes: _notes.text.trim().isEmpty ? null : _notes.text,
     );
     await ref.read(vaultControllerProvider.notifier).saveEntry(entry);
-    ref.read(selectedEntryProvider.notifier).state = entry;
+    
+    if (!mounted) return;
+    
+    final isMobile = MediaQuery.sizeOf(context).width < 900;
+    if (isNew || isMobile) {
+      ref.read(selectedEntryProvider.notifier).state = null;
+    } else {
+      ref.read(selectedEntryProvider.notifier).state = entry;
+    }
   }
 
   Future<void> _delete(PasswordEntry entry) async {
