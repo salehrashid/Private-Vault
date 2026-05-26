@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_messages.dart';
 import '../../../auth/presentation/auth_controller.dart';
+import '../../data/biometric_vault_unlock_store.dart';
 import '../controllers/vault_providers.dart';
 
 class UnlockScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,11 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
     });
 
     final busy = ref.watch(vaultControllerProvider).isLoading;
+    final biometricSupport = ref.watch(biometricDeviceSupportProvider);
+    final hasFingerprintHardware = biometricSupport.maybeWhen(
+      data: (support) => support.hasFingerprintHardware,
+      orElse: () => false,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -85,6 +91,26 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                       : const Icon(Icons.lock_open),
                   label: const Text('Unlock'),
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: OutlinedButton.icon(
+                    onPressed: busy || !hasFingerprintHardware
+                        ? null
+                        : _unlockWithFingerprint,
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text('Unlock with fingerprint'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Text(
+                //   biometricSupport.maybeWhen(
+                //     data: _fingerprintSupportText,
+                //     loading: () => 'Checking fingerprint hardware...',
+                //     orElse: () => 'Fingerprint hardware status unavailable.',
+                //   ),
+                //   textAlign: TextAlign.center,
+                //   style: Theme.of(context).textTheme.bodySmall,
+                // ),
               ],
             ),
           ),
@@ -95,5 +121,19 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
 
   void _unlock() {
     ref.read(vaultControllerProvider.notifier).unlock(_masterPassword.text);
+  }
+
+  void _unlockWithFingerprint() {
+    ref.read(vaultControllerProvider.notifier).unlockWithBiometrics();
+  }
+
+  String _fingerprintSupportText(BiometricDeviceSupport support) {
+    if (!support.hasFingerprintHardware) {
+      return 'Fingerprint hardware not detected on this device.';
+    }
+    if (!support.hasEnrolledBiometrics) {
+      return 'Fingerprint hardware detected. Enroll fingerprint in Android settings first.';
+    }
+    return 'Fingerprint hardware detected.';
   }
 }

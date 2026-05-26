@@ -113,15 +113,33 @@ class FiredartVaultRepository implements VaultRepository {
     return key;
   }
 
+  Future<void> verifyKey(String uid, SecretKey key) async {
+    final meta = await loadMeta(uid);
+    if (meta == null) {
+      throw const AppException('No vault exists for this account yet.');
+    }
+    final verifier = await _crypto.decryptString(
+      EncryptedValue(meta.verifier),
+      key,
+    );
+    if (verifier != 'vault-ok') {
+      throw const AppException('Invalid saved biometric unlock key.');
+    }
+  }
+
   @override
   Stream<List<VaultFolder>> watchFolders(String uid, SecretKey key) async* {
     final initialDocs = await _folders(uid).get();
     final initialFolders = <VaultFolder>[];
     for (final doc in initialDocs) {
       final dto = FolderCipherDto.fromMap(doc.id, doc.map);
-      initialFolders.add(dto.toEntity(await _crypto.decryptString(dto.name, key)));
+      initialFolders.add(
+        dto.toEntity(await _crypto.decryptString(dto.name, key)),
+      );
     }
-    initialFolders.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    initialFolders.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     yield initialFolders;
 
     yield* _folders(uid).stream.asyncMap((docs) async {
