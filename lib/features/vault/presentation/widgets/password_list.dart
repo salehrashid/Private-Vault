@@ -19,16 +19,18 @@ class PasswordList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(folderEntriesProvider(folderId));
     final selected = ref.watch(selectedEntryProvider);
+    final hiddenEntries = ref.watch(hiddenEntriesProvider);
 
     final body = entries.when(
       data: (items) {
-        if (items.isEmpty) {
+        final visibleItems = items.where((e) => !hiddenEntries.contains(e.id)).toList();
+        if (visibleItems.isEmpty) {
           return const Center(child: Text('No passwords in this folder'));
         }
         return ListView.separated(
           padding: const EdgeInsets.all(12),
           itemBuilder: (context, index) {
-            final entry = items[index];
+            final entry = visibleItems[index];
             return ListTile(
               selected: selected?.id == entry.id,
               selectedTileColor: Theme.of(
@@ -54,7 +56,7 @@ class PasswordList extends ConsumerWidget {
             );
           },
           separatorBuilder: (context, index) => const SizedBox(height: 6),
-          itemCount: items.length,
+          itemCount: visibleItems.length,
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

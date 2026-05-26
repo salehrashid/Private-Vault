@@ -6,6 +6,7 @@ import '../../../auth/presentation/auth_controller.dart';
 import '../../../../app/responsive_breakpoints.dart';
 import '../../domain/vault_folder.dart';
 import '../controllers/vault_providers.dart';
+import 'undo_snackbar.dart';
 
 class FolderSidebar extends ConsumerWidget {
   const FolderSidebar({super.key});
@@ -14,6 +15,7 @@ class FolderSidebar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final folders = ref.watch(vaultFoldersProvider);
     final selected = ref.watch(selectedFolderIdProvider);
+    final hiddenFolders = ref.watch(hiddenFoldersProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -47,21 +49,22 @@ class FolderSidebar extends ConsumerWidget {
           Expanded(
             child: folders.when(
               data: (items) {
+                final visibleItems = items.where((f) => !hiddenFolders.contains(f.id)).toList();
                 final isDesktop = MediaQuery.sizeOf(context).width >=
                     ResponsiveBreakpoints.desktop;
-                if (isDesktop && items.isNotEmpty && selected == null) {
+                if (isDesktop && visibleItems.isNotEmpty && selected == null) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     ref.read(selectedFolderIdProvider.notifier).state =
-                        items.first.id;
+                        visibleItems.first.id;
                   });
                 }
-                if (items.isEmpty) {
+                if (visibleItems.isEmpty) {
                   return const Center(child: Text('No folders yet'));
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
                   itemBuilder: (context, index) {
-                    final folder = items[index];
+                    final folder = visibleItems[index];
                     return _FolderTile(
                       folder: folder,
                       selected: selected == folder.id,
@@ -69,7 +72,7 @@ class FolderSidebar extends ConsumerWidget {
                   },
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 4),
-                  itemCount: items.length,
+                  itemCount: visibleItems.length,
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -104,13 +107,83 @@ class _FolderTile extends ConsumerWidget {
       trailing: PopupMenuButton<String>(
         tooltip: 'Folder actions',
         onSelected: (value) async {
-          if (value == 'rename') {
-            await showFolderDialog(context, ref, folder: folder);
-          }
-          if (value == 'delete') {
-            await ref
-                .read(vaultControllerProvider.notifier)
-                .deleteFolder(folder.id);
+          switch (value) {
+            case 'rename':
+              await showFolderDialog(context, ref, folder: folder);
+              break;
+            case 'delete':
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete Folder?'),
+                  content: Text('Are you sure you want to delete "${folder.name}" and all its entries?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor: Theme.of(context).colorScheme.onError,
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed != true) return;
+              if (!context.mounted) return;
+
+              final hiddenFoldersNotifier = ref.read(hiddenFoldersProvider.notifier);
+              final vaultController = ref.read(vaultControllerProvider.notifier);
+
+              hiddenFoldersNotifier.update((s) => {...s, folder.id});
+              if (ref.read(selectedFolderIdProvider) == folder.id) {
+                 ref.read(selectedFolderIdProvider.notifier).state = null;
+                 ref.read(selectedEntryProvider.notifier).state = null;
+              }
+
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              scaffoldMessenger.hideCurrentSnackBar();
+
+              bool isUndo = false;
+              final snackBar = buildUndoSnackBar(
+                message: 'Folder deleted',
+                onUndo: () {
+                  isUndo = true;
+                },
+              );
+
+              final controller = scaffoldMessenger.showSnackBar(snackBar);
+              
+              // Memaksa snackbar tertutup setelah 4 detik 
+              // (mencegah bug hover di desktop yang membuat snackbar diam)
+              Future.delayed(const Duration(seconds: 4), () {
+                try {
+                  controller.close();
+                } catch (_) {}
+              });
+
+              final reason = await controller.closed;
+
+              if (isUndo || reason == SnackBarClosedReason.action) {
+                 hiddenFoldersNotifier.update((s) {
+                   final newS = Set<String>.from(s);
+                   newS.remove(folder.id);
+                   return newS;
+                 });
+              } else {
+                 await vaultController.deleteFolder(folder.id);
+                 hiddenFoldersNotifier.update((s) {
+                   final newS = Set<String>.from(s);
+                   newS.remove(folder.id);
+                   return newS;
+                 });
+              }
+              break;
           }
         },
         itemBuilder: (context) => const [

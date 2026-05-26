@@ -21,6 +21,9 @@ final unlockedVaultKeyProvider = StateProvider<SecretKey?>((ref) => null);
 final selectedFolderIdProvider = StateProvider<String?>((ref) => null);
 final selectedEntryProvider = StateProvider<PasswordEntry?>((ref) => null);
 
+final hiddenFoldersProvider = StateProvider<Set<String>>((ref) => {});
+final hiddenEntriesProvider = StateProvider<Set<String>>((ref) => {});
+
 final vaultFoldersProvider = StreamProvider<List<VaultFolder>>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
   final key = ref.watch(unlockedVaultKeyProvider);
