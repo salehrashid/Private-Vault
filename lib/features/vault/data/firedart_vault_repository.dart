@@ -114,8 +114,17 @@ class FiredartVaultRepository implements VaultRepository {
   }
 
   @override
-  Stream<List<VaultFolder>> watchFolders(String uid, SecretKey key) {
-    return _folders(uid).stream.asyncMap((docs) async {
+  Stream<List<VaultFolder>> watchFolders(String uid, SecretKey key) async* {
+    final initialDocs = await _folders(uid).get();
+    final initialFolders = <VaultFolder>[];
+    for (final doc in initialDocs) {
+      final dto = FolderCipherDto.fromMap(doc.id, doc.map);
+      initialFolders.add(dto.toEntity(await _crypto.decryptString(dto.name, key)));
+    }
+    initialFolders.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    yield initialFolders;
+
+    yield* _folders(uid).stream.asyncMap((docs) async {
       final folders = <VaultFolder>[];
       for (final doc in docs) {
         final dto = FolderCipherDto.fromMap(doc.id, doc.map);
@@ -133,8 +142,25 @@ class FiredartVaultRepository implements VaultRepository {
     String uid,
     String folderId,
     SecretKey key,
-  ) {
-    return _entries(uid, folderId).stream.asyncMap((docs) async {
+  ) async* {
+    final initialDocs = await _entries(uid, folderId).get();
+    final initialEntries = <PasswordEntry>[];
+    for (final doc in initialDocs) {
+      final dto = EntryCipherDto.fromMap(doc.id, doc.map);
+      initialEntries.add(
+        dto.toEntity(
+          title: await _crypto.decryptString(dto.title, key),
+          username: await _crypto.decryptString(dto.username, key),
+          password: await _crypto.decryptString(dto.password, key),
+          url: await _crypto.decryptString(dto.url, key),
+          notes: await _crypto.decryptString(dto.notes, key),
+        ),
+      );
+    }
+    initialEntries.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    yield initialEntries;
+
+    yield* _entries(uid, folderId).stream.asyncMap((docs) async {
       final entries = <PasswordEntry>[];
       for (final doc in docs) {
         final dto = EntryCipherDto.fromMap(doc.id, doc.map);
