@@ -125,16 +125,14 @@ class _MobileVaultBody extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back),
           ),
           title: const Text('Passwords'),
-          actions: [
-            IconButton(
-              tooltip: 'New entry',
-              onPressed: () => ref.read(selectedEntryProvider.notifier).state =
-                  _newEntry(folderId),
-              icon: const Icon(Icons.add),
-            ),
-          ],
         ),
         body: PasswordList(folderId: folderId, showAppBar: false),
+        floatingActionButton: FloatingActionButton(
+          tooltip: 'New entry',
+          onPressed: () => ref.read(selectedEntryProvider.notifier).state =
+              _newEntry(folderId),
+          child: const Icon(Icons.add),
+        ),
       );
     }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/error_messages.dart';
 import '../../domain/password_entry.dart';
 import '../controllers/vault_providers.dart';
+import 'delete_entry_helper.dart';
 
 class PasswordList extends ConsumerWidget {
   const PasswordList({
@@ -49,10 +50,14 @@ class PasswordList extends ConsumerWidget {
               title: Text(
                 entry.title.isEmpty ? 'Untitled entry' : entry.title,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text(entry.username, overflow: TextOverflow.ellipsis),
+              subtitle: entry.username.isNotEmpty 
+                  ? Text(entry.username, overflow: TextOverflow.ellipsis)
+                  : null,
               onTap: () =>
                   ref.read(selectedEntryProvider.notifier).state = entry,
+              onLongPress: () => deleteEntryWithUndo(context, ref, entry),
             );
           },
           separatorBuilder: (context, index) => const SizedBox(height: 6),
@@ -70,16 +75,14 @@ class PasswordList extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Passwords'),
-        actions: [
-          IconButton(
-            tooltip: 'New entry',
-            onPressed: () => ref.read(selectedEntryProvider.notifier).state =
-                _newEntry(folderId),
-            icon: const Icon(Icons.add),
-          ),
-        ],
       ),
       body: body,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'New entry',
+        onPressed: () => ref.read(selectedEntryProvider.notifier).state =
+            _newEntry(folderId),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
