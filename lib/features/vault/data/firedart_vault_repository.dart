@@ -19,7 +19,7 @@ class FiredartVaultRepository implements VaultRepository {
   final _uuid = const Uuid();
 
   fd.Firestore get _firestore {
-    if (!firebaseConfig.isConfigured || !fd.Firestore.initialized) {
+    if (!FirebaseConfig.instance.isConfigured || !fd.Firestore.initialized) {
       throw const AppException('Firebase is not configured yet.');
     }
     return fd.Firestore.instance;

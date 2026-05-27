@@ -64,7 +64,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
-                if (!firebaseConfig.isConfigured) ...[
+                if (!FirebaseConfig.instance.isConfigured) ...[
                   const SizedBox(height: 18),
                   const _ConfigWarning(),
                 ],
@@ -84,7 +84,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: busy || !firebaseConfig.isConfigured
+                  onPressed: busy || !FirebaseConfig.instance.isConfigured
                       ? null
                       : () {
                           final controller = ref.read(
@@ -127,7 +127,7 @@ class _ConfigWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final message =
-        firebaseConfig.missingConfigurationMessage ??
+        FirebaseConfig.instance.missingConfigurationMessage ??
         'Firebase config is not available.';
     return DecoratedBox(
       decoration: BoxDecoration(
