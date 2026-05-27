@@ -11,7 +11,7 @@ import 'secure_auth_token_store.dart';
 
 class FiredartAuthRepository implements AuthRepository {
   fd.FirebaseAuth get _auth {
-    if (!firebaseConfig.isConfigured || !fd.FirebaseAuth.initialized) {
+    if (!FirebaseConfig.instance.isConfigured || !fd.FirebaseAuth.initialized) {
       throw const AppException('Firebase is not configured yet.');
     }
     return fd.FirebaseAuth.instance;
@@ -20,7 +20,7 @@ class FiredartAuthRepository implements AuthRepository {
   @override
   Stream<AuthUser?> authState() async* {
     yield currentUser();
-    if (!firebaseConfig.isConfigured || !fd.FirebaseAuth.initialized) {
+    if (!FirebaseConfig.instance.isConfigured || !fd.FirebaseAuth.initialized) {
       return;
     }
     yield* _auth.signInState.map((signedIn) => signedIn ? currentUser() : null);
@@ -28,7 +28,7 @@ class FiredartAuthRepository implements AuthRepository {
 
   @override
   AuthUser? currentUser() {
-    if (!firebaseConfig.isConfigured || !fd.FirebaseAuth.initialized) {
+    if (!FirebaseConfig.instance.isConfigured || !fd.FirebaseAuth.initialized) {
       return null;
     }
     if (!_auth.isSignedIn) {
