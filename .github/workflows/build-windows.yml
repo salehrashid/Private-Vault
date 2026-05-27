@@ -31,12 +31,17 @@ jobs:
         run: |
           Set-Content -Path ".env" -Value "${{ secrets.ENV_FILE }}" -Encoding UTF8
 
-      - name: Check .env exists
+          Write-Host "===== ROOT FILES ====="
+          Get-ChildItem -Force
+
+          Write-Host "===== .env CONTENT ====="
+          Get-Content .env
+
+      - name: Check pubspec assets
         shell: pwsh
         run: |
-          Get-ChildItem -Force
-          if (!(Test-Path ".env")) { exit 1 }
-          Write-Host ".env found"
+          Write-Host "===== pubspec.yaml ====="
+          Get-Content pubspec.yaml
 
       - name: Get dependencies
         run: flutter pub get
@@ -46,6 +51,17 @@ jobs:
 
       - name: Build Windows release
         run: flutter build windows --release -v
+
+      - name: Check built flutter assets
+        shell: pwsh
+        run: |
+          Write-Host "===== FLUTTER ASSETS ====="
+
+          if (Test-Path "build/windows/x64/runner/Release/data/flutter_assets") {
+            Get-ChildItem "build/windows/x64/runner/Release/data/flutter_assets" -Force
+          } else {
+            Write-Host "flutter_assets folder not found"
+          }
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
