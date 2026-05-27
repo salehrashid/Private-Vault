@@ -131,11 +131,6 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _url,
-                  decoration: const InputDecoration(labelText: 'URL'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
                   controller: _notes,
                   minLines: 4,
                   maxLines: 8,
