@@ -40,3 +40,10 @@ jobs:
         with:
           name: flutter-windows-release
           path: build/windows/x64/runner/Release
+      
+      - name: Create .env
+        shell: pwsh
+        run: |
+          @"
+          ${{ secrets.ENV_FILE }}
+          "@ | Out-File -FilePath .env -Encoding utf8
