@@ -23,7 +23,7 @@ Losing the master password means the encrypted vault cannot be recovered.
 
 `assets/env` is the Flutter asset loaded at runtime. The committed file is only
 a placeholder; GitHub Actions overwrites it from `secrets.ENV_FILE` before the
-Windows release build.
+Windows and Linux release builds.
 
 ## Free-Tier Notes
 
