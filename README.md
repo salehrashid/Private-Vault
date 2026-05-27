@@ -18,7 +18,12 @@ Losing the master password means the encrypted vault cannot be recovered.
 2. Enable Email/Password authentication.
 3. Create a Cloud Firestore database.
 4. Deploy `firestore.rules`.
-5. Copy `.env.sample` to `.env` and fill in your Firebase project ID and web API key.
+5. Copy `.env.sample` to `assets/env` for local builds, or set the GitHub
+   Actions `ENV_FILE` secret for release artifacts.
+
+`assets/env` is the Flutter asset loaded at runtime. The committed file is only
+a placeholder; GitHub Actions overwrites it from `secrets.ENV_FILE` before the
+Windows release build.
 
 ## Free-Tier Notes
 

@@ -8,7 +8,7 @@ class FirebaseBootstrap {
   static bool _initialized = false;
 
   static Future<void> initialize() async {
-    await dotenv.load(fileName: '.env', isOptional: true);
+    await dotenv.load(fileName: FirebaseConfig.assetPath, isOptional: true);
 
     final config = firebaseConfig;
     if (_initialized || !config.isConfigured) {

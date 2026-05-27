@@ -1,0 +1,4 @@
+# Placeholder for local builds. GitHub Actions overwrites this file from
+# secrets.ENV_FILE before building release artifacts.
+FIREBASE_PROJECT_ID=
+FIREBASE_WEB_API_KEY=
