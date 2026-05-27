@@ -3,9 +3,12 @@ name: Build Flutter Windows
 on:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout project
@@ -15,6 +18,10 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
+
+      - name: Flutter doctor
+        run: flutter doctor -v
 
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
@@ -22,8 +29,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Clean
+        run: flutter clean
+
       - name: Build Windows release
-        run: flutter build windows --release
+        run: flutter build windows --release -v
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
