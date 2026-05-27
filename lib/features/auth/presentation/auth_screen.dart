@@ -126,6 +126,9 @@ class _ConfigWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final message =
+        firebaseConfig.missingConfigurationMessage ??
+        'Firebase config is not available.';
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.errorContainer,
@@ -134,7 +137,8 @@ class _ConfigWarning extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(
-          'Configure lib/firebase/firebase_config.dart with your Firebase project ID and web API key before signing in.',
+          '$message Build artifacts must include '
+          '${FirebaseConfig.assetPath}.',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onErrorContainer,
           ),
