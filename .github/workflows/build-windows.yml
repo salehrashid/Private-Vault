@@ -26,6 +26,18 @@ jobs:
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
+      - name: Create .env
+        shell: pwsh
+        run: |
+          Set-Content -Path ".env" -Value "${{ secrets.ENV_FILE }}" -Encoding UTF8
+
+      - name: Check .env exists
+        shell: pwsh
+        run: |
+          Get-ChildItem -Force
+          if (!(Test-Path ".env")) { exit 1 }
+          Write-Host ".env found"
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -40,10 +52,3 @@ jobs:
         with:
           name: flutter-windows-release
           path: build/windows/x64/runner/Release
-      
-      - name: Create .env
-        shell: pwsh
-        run: |
-          @"
-          ${{ secrets.ENV_FILE }}
-          "@ | Out-File -FilePath .env -Encoding utf8
