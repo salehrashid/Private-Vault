@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -34,9 +35,19 @@ class BiometricVaultUnlockStore {
     }
 
     try {
+      final supported = await _localAuth.isDeviceSupported();
+      if (defaultTargetPlatform == TargetPlatform.windows) {
+        return nativeSupport.copyWith(
+          platform: 'windows',
+          hasFingerprintHardware: supported,
+          hasBiometricHardware: supported,
+          canAuthenticateWithLocalAuth: supported,
+          enrolledBiometrics: supported ? const ['windowsHello'] : const [],
+        );
+      }
+
       final canCheck = await _localAuth.canCheckBiometrics;
       final biometrics = await _localAuth.getAvailableBiometrics();
-      final supported = await _localAuth.isDeviceSupported();
       return nativeSupport.copyWith(
         canAuthenticateWithLocalAuth: supported && canCheck,
         enrolledBiometrics: biometrics.map((type) => type.name).toList(),
@@ -81,6 +92,10 @@ class BiometricVaultUnlockStore {
   String _storageKey(String uid) => 'vault_biometric_key_$uid';
 
   Future<bool> _authenticate(BiometricDeviceSupport support) async {
+    if (support.platform == 'windows') {
+      return _runLocalAuth(biometricOnly: false);
+    }
+
     if (support.hasFingerprintHardware) {
       return _authenticateWithNativeFingerprint();
     }
@@ -175,14 +190,18 @@ class BiometricDeviceSupport {
       hasEnrolledBiometricsFromAndroid || enrolledBiometrics.isNotEmpty;
 
   BiometricDeviceSupport copyWith({
+    String? platform,
+    bool? hasFingerprintHardware,
+    bool? hasBiometricHardware,
     bool? canAuthenticateWithLocalAuth,
     List<String>? enrolledBiometrics,
   }) {
     return BiometricDeviceSupport(
-      platform: platform,
+      platform: platform ?? this.platform,
       sdkInt: sdkInt,
-      hasFingerprintHardware: hasFingerprintHardware,
-      hasBiometricHardware: hasBiometricHardware,
+      hasFingerprintHardware:
+          hasFingerprintHardware ?? this.hasFingerprintHardware,
+      hasBiometricHardware: hasBiometricHardware ?? this.hasBiometricHardware,
       hasEnrolledBiometricsFromAndroid: hasEnrolledBiometricsFromAndroid,
       biometricAuthStatus: biometricAuthStatus,
       canAuthenticateWithLocalAuth:
