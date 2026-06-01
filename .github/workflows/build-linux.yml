@@ -36,10 +36,14 @@ jobs:
 
       - name: Create Firebase env asset
         env:
-          ENV_CONTENT: ${{ secrets.ENV_FILE }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
         run: |
           mkdir -p assets
-          printf '%s' "$ENV_CONTENT" > assets/env
+          {
+            printf 'FIREBASE_PROJECT_ID=%s\n' "$FIREBASE_PROJECT_ID"
+            printf 'FIREBASE_WEB_API_KEY=%s\n' "$FIREBASE_WEB_API_KEY"
+          } > assets/env
 
       - name: Verify Firebase env asset
         run: |
@@ -63,7 +67,13 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux release
-        run: flutter build linux --release -v
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: >
+          flutter build linux --release -v
+          --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
+          --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY"
 
       - name: Verify bundled Firebase env asset
         run: |

@@ -37,6 +37,7 @@ migrate_working_dir/
 
 # Private local configuration
 .env
+assets/env
 
 # Symbolication related
 app.*.symbols

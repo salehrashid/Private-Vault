@@ -9,23 +9,14 @@ class FirebaseBootstrap {
   static bool _initialized = false;
 
   static Future<void> initialize() async {
-    try {
-      await dotenv.load(fileName: FirebaseConfig.assetPath);
-    } catch (e) {
-      debugPrint(
-        '[FirebaseBootstrap] Failed to load ${FirebaseConfig.assetPath}: $e\n'
-        'Ensure the asset is declared in pubspec.yaml and bundled in the build.',
-      );
-    }
+    final loadedAssetPath = await _loadOptionalEnv();
 
-    FirebaseConfig.initFromEnv();
+    FirebaseConfig.initFromEnv(loadedAssetPath: loadedAssetPath);
     final config = FirebaseConfig.instance;
 
     if (_initialized || !config.isConfigured) {
       if (!config.isConfigured) {
-        debugPrint(
-          '[FirebaseBootstrap] ${config.missingConfigurationMessage}',
-        );
+        debugPrint('[FirebaseBootstrap] ${config.missingConfigurationMessage}');
       }
       return;
     }
@@ -34,5 +25,47 @@ class FirebaseBootstrap {
     FirebaseAuth.initialize(config.webApiKey, tokenStore);
     Firestore.initialize(config.projectId);
     _initialized = true;
+  }
+
+  static Future<String?> _loadOptionalEnv() async {
+    if (const String.fromEnvironment('FIREBASE_PROJECT_ID').trim().isNotEmpty &&
+        const String.fromEnvironment(
+          'FIREBASE_WEB_API_KEY',
+        ).trim().isNotEmpty) {
+      return null;
+    }
+
+    if (await _tryLoadEnvAsset(FirebaseConfig.assetPath)) {
+      return FirebaseConfig.assetPath;
+    }
+
+    if (await _tryLoadEnvAsset(FirebaseConfig.sampleAssetPath)) {
+      return FirebaseConfig.sampleAssetPath;
+    }
+
+    return null;
+  }
+
+  static Future<bool> _tryLoadEnvAsset(String assetPath) async {
+    try {
+      await dotenv.load(fileName: assetPath);
+      if (assetPath == FirebaseConfig.sampleAssetPath) {
+        debugPrint(
+          '[FirebaseBootstrap] Loaded ${FirebaseConfig.sampleAssetPath}. '
+          'Firebase remains disabled until real config is provided.',
+        );
+      }
+      return true;
+    } catch (e) {
+      if (assetPath == FirebaseConfig.assetPath) {
+        debugPrint(
+          '[FirebaseBootstrap] ${FirebaseConfig.assetPath} was not found. '
+          'Falling back to ${FirebaseConfig.sampleAssetPath}.',
+        );
+      } else {
+        debugPrint('[FirebaseBootstrap] Failed to load $assetPath: $e');
+      }
+      return false;
+    }
   }
 }

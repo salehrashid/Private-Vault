@@ -137,8 +137,8 @@ class _ConfigWarning extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Text(
-          '$message Build artifacts must include '
-          '${FirebaseConfig.assetPath}.',
+          '$message Firebase features are disabled until configuration is '
+          'provided.',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onErrorContainer,
           ),

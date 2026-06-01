@@ -32,10 +32,15 @@ jobs:
       - name: Create Firebase env asset
         shell: pwsh
         env:
-          ENV_CONTENT: ${{ secrets.ENV_FILE }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
         run: |
           New-Item -ItemType Directory -Force -Path "assets" | Out-Null
-          Set-Content -Path "assets/env" -Value $env:ENV_CONTENT -NoNewline -Encoding UTF8
+          $lines = @(
+            "FIREBASE_PROJECT_ID=$env:FIREBASE_PROJECT_ID",
+            "FIREBASE_WEB_API_KEY=$env:FIREBASE_WEB_API_KEY"
+          )
+          Set-Content -Path "assets/env" -Value $lines -Encoding UTF8
 
       - name: Verify Firebase env asset
         shell: pwsh
@@ -61,7 +66,14 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows release
-        run: flutter build windows --release -v
+        shell: pwsh
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: >
+          flutter build windows --release -v
+          --dart-define=FIREBASE_PROJECT_ID="$env:FIREBASE_PROJECT_ID"
+          --dart-define=FIREBASE_WEB_API_KEY="$env:FIREBASE_WEB_API_KEY"
 
       - name: Verify bundled Firebase env asset
         shell: pwsh
