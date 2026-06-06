@@ -29,6 +29,22 @@ jobs:
       - name: Clean
         run: flutter clean
 
+      - name: Validate Firebase secrets
+        shell: pwsh
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:FIREBASE_PROJECT_ID)) {
+            Write-Error "GitHub secret FIREBASE_PROJECT_ID is empty or unavailable to this workflow."
+            exit 1
+          }
+          if ([string]::IsNullOrWhiteSpace($env:FIREBASE_WEB_API_KEY)) {
+            Write-Error "GitHub secret FIREBASE_WEB_API_KEY is empty or unavailable to this workflow."
+            exit 1
+          }
+          Write-Host "Firebase secrets are available for this workflow."
+
       - name: Create Firebase env asset
         shell: pwsh
         env:
