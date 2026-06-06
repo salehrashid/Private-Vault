@@ -35,11 +35,11 @@ class FirebaseConfig {
     _instance = FirebaseConfig(
       projectId: _firstUsableValue(
         _projectIdFromDartDefine,
-        dotenv.env['FIREBASE_PROJECT_ID'],
+        _dotenvValue('FIREBASE_PROJECT_ID'),
       ),
       webApiKey: _firstUsableValue(
         _webApiKeyFromDartDefine,
-        dotenv.env['FIREBASE_WEB_API_KEY'],
+        _dotenvValue('FIREBASE_WEB_API_KEY'),
       ),
       loadedAssetPath: loadedAssetPath,
     );
@@ -108,6 +108,14 @@ class FirebaseConfig {
   static bool _isUsableValue(String? value) {
     final trimmed = value?.trim() ?? '';
     return trimmed.isNotEmpty && !_isPlaceholder(trimmed);
+  }
+
+  static String? _dotenvValue(String key) {
+    try {
+      return dotenv.env[key];
+    } catch (_) {
+      return null;
+    }
   }
 
   static bool _isPlaceholder(String value) {
