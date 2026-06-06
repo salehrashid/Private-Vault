@@ -5,6 +5,7 @@ class FirebaseConfig {
     required this.projectId,
     required this.webApiKey,
     this.loadedAssetPath,
+    this.initializationError,
   });
 
   static const assetPath = 'assets/env';
@@ -44,11 +45,25 @@ class FirebaseConfig {
     );
   }
 
+  static void markInitializationFailed(Object error) {
+    _instance = FirebaseConfig(
+      projectId: '',
+      webApiKey: '',
+      loadedAssetPath: _instance.loadedAssetPath,
+      initializationError:
+          'Firebase initialization failed: ${error.runtimeType}',
+    );
+  }
+
   final String projectId;
   final String webApiKey;
   final String? loadedAssetPath;
+  final String? initializationError;
 
-  bool get isConfigured => projectId.isNotEmpty && webApiKey.isNotEmpty;
+  bool get isConfigured =>
+      initializationError == null &&
+      projectId.isNotEmpty &&
+      webApiKey.isNotEmpty;
 
   String get sourceLabel {
     if (hasCompleteDartDefineConfig) {
@@ -64,6 +79,10 @@ class FirebaseConfig {
   }
 
   String? get missingConfigurationMessage {
+    if (initializationError != null) {
+      return initializationError;
+    }
+
     final missingKeys = <String>[
       if (projectId.isEmpty) 'FIREBASE_PROJECT_ID',
       if (webApiKey.isEmpty) 'FIREBASE_WEB_API_KEY',

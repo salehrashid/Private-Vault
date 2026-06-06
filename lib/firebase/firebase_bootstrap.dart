@@ -24,10 +24,16 @@ class FirebaseBootstrap {
     debugPrint(
       '[FirebaseBootstrap] Firebase config loaded from ${config.sourceLabel}.',
     );
-    final tokenStore = await SecureAuthTokenStore.create();
-    FirebaseAuth.initialize(config.webApiKey, tokenStore);
-    Firestore.initialize(config.projectId);
-    _initialized = true;
+    try {
+      final tokenStore = await SecureAuthTokenStore.create();
+      FirebaseAuth.initialize(config.webApiKey, tokenStore);
+      Firestore.initialize(config.projectId);
+      _initialized = true;
+    } catch (error, stackTrace) {
+      FirebaseConfig.markInitializationFailed(error);
+      debugPrint('[FirebaseBootstrap] Firebase initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   static Future<String?> _loadOptionalEnv() async {
