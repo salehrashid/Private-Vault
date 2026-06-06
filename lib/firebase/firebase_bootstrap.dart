@@ -21,6 +21,9 @@ class FirebaseBootstrap {
       return;
     }
 
+    debugPrint(
+      '[FirebaseBootstrap] Firebase config loaded from ${config.sourceLabel}.',
+    );
     final tokenStore = await SecureAuthTokenStore.create();
     FirebaseAuth.initialize(config.webApiKey, tokenStore);
     Firestore.initialize(config.projectId);
@@ -28,10 +31,7 @@ class FirebaseBootstrap {
   }
 
   static Future<String?> _loadOptionalEnv() async {
-    if (const String.fromEnvironment('FIREBASE_PROJECT_ID').trim().isNotEmpty &&
-        const String.fromEnvironment(
-          'FIREBASE_WEB_API_KEY',
-        ).trim().isNotEmpty) {
+    if (FirebaseConfig.hasCompleteDartDefineConfig) {
       return null;
     }
 

@@ -70,10 +70,10 @@ jobs:
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
-        run: >
-          flutter build linux --release -v
-          --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
-          --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY"
+        run: |
+          flutter build linux --release -v \
+            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY"
 
       - name: Verify bundled Firebase env asset
         run: |

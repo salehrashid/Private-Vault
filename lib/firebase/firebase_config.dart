@@ -24,6 +24,11 @@ class FirebaseConfig {
   /// Cached singleton populated after [initFromEnv] is called.
   static FirebaseConfig get instance => _instance;
 
+  static bool get hasCompleteDartDefineConfig {
+    return _isUsableValue(_projectIdFromDartDefine) &&
+        _isUsableValue(_webApiKeyFromDartDefine);
+  }
+
   /// Read values from compile-time defines first, then dotenv, and cache them.
   static void initFromEnv({String? loadedAssetPath}) {
     _instance = FirebaseConfig(
@@ -45,6 +50,19 @@ class FirebaseConfig {
 
   bool get isConfigured => projectId.isNotEmpty && webApiKey.isNotEmpty;
 
+  String get sourceLabel {
+    if (hasCompleteDartDefineConfig) {
+      return '--dart-define';
+    }
+    if (loadedAssetPath == assetPath && isConfigured) {
+      return assetPath;
+    }
+    if (loadedAssetPath == sampleAssetPath) {
+      return '$sampleAssetPath placeholder';
+    }
+    return 'unavailable';
+  }
+
   String? get missingConfigurationMessage {
     final missingKeys = <String>[
       if (projectId.isEmpty) 'FIREBASE_PROJECT_ID',
@@ -61,12 +79,16 @@ class FirebaseConfig {
 
   static String _firstUsableValue(String compileTimeValue, String? envValue) {
     for (final value in [compileTimeValue, envValue]) {
-      final trimmed = value?.trim() ?? '';
-      if (trimmed.isNotEmpty && !_isPlaceholder(trimmed)) {
-        return trimmed;
+      if (_isUsableValue(value)) {
+        return value!.trim();
       }
     }
     return '';
+  }
+
+  static bool _isUsableValue(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isNotEmpty && !_isPlaceholder(trimmed);
   }
 
   static bool _isPlaceholder(String value) {
