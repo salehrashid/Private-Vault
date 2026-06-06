@@ -36,23 +36,23 @@ jobs:
 
       - name: Validate Firebase secrets
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY || vars.FIREBASE_WEB_API_KEY }}
         run: |
           if [ -z "${FIREBASE_PROJECT_ID:-}" ]; then
-            echo "::error::GitHub secret FIREBASE_PROJECT_ID is empty or unavailable to this workflow."
+            echo "::error::FIREBASE_PROJECT_ID is empty or unavailable. Add it as a Repository secret or Repository variable for GitHub Actions."
             exit 1
           fi
           if [ -z "${FIREBASE_WEB_API_KEY:-}" ]; then
-            echo "::error::GitHub secret FIREBASE_WEB_API_KEY is empty or unavailable to this workflow."
+            echo "::error::FIREBASE_WEB_API_KEY is empty or unavailable. Add it as a Repository secret or Repository variable for GitHub Actions."
             exit 1
           fi
-          echo "Firebase secrets are available for this workflow."
+          echo "Firebase config values are available for this workflow."
 
       - name: Create Firebase env asset
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY || vars.FIREBASE_WEB_API_KEY }}
         run: |
           mkdir -p assets
           {
@@ -83,8 +83,8 @@ jobs:
 
       - name: Build Linux release
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY || vars.FIREBASE_WEB_API_KEY }}
         run: |
           flutter build linux --release -v \
             --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
