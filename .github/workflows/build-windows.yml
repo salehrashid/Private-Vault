@@ -2,6 +2,11 @@ name: Build Flutter Windows
 
 on:
   workflow_dispatch:
+    inputs:
+      github_environment:
+        description: GitHub Environment name that contains Firebase secrets
+        required: true
+        default: production
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -9,6 +14,7 @@ env:
 jobs:
   build-windows:
     runs-on: windows-2022
+    environment: ${{ inputs.github_environment }}
 
     steps:
       - name: Checkout project
