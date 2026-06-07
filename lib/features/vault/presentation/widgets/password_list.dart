@@ -71,9 +71,7 @@ class PasswordList extends ConsumerWidget {
                     : null,
                 onTap: () =>
                     ref.read(selectedEntryProvider.notifier).state = entry,
-                onLongPress: online
-                    ? () => deleteEntryWithUndo(context, ref, entry)
-                    : null,
+                onLongPress: () => deleteEntryWithUndo(context, ref, entry),
               );
             },
             separatorBuilder: (context, index) => const SizedBox(height: 6),
@@ -117,7 +115,7 @@ class PasswordList extends ConsumerWidget {
       body: body,
       floatingActionButton: FloatingActionButton(
         tooltip: 'New entry',
-        onPressed: vaultBusy || !online
+        onPressed: vaultBusy
             ? null
             : () => ref.read(selectedEntryProvider.notifier).state = _newEntry(
                 folderId,

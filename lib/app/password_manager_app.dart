@@ -16,17 +16,13 @@ class PasswordManagerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(authSessionMonitorProvider);
     ref.watch(authVaultSessionCleanupProvider);
+    ref.watch(vaultOfflineSyncProvider);
 
     ref.listen(authSessionMessageProvider, (_, message) {
-      if (message == null) {
-        return;
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final messenger = _scaffoldMessengerKey.currentState;
-        messenger?.hideCurrentSnackBar();
-        messenger?.showSnackBar(SnackBar(content: Text(message)));
-        ref.read(authSessionMessageProvider.notifier).state = null;
-      });
+      _showSnackBar(ref, message, authSessionMessageProvider);
+    });
+    ref.listen(vaultSyncMessageProvider, (_, message) {
+      _showSnackBar(ref, message, vaultSyncMessageProvider);
     });
 
     return MaterialApp.router(
@@ -45,6 +41,22 @@ class PasswordManagerApp extends ConsumerWidget {
         );
       },
     );
+  }
+
+  void _showSnackBar(
+    WidgetRef ref,
+    String? message,
+    StateProvider<String?> provider,
+  ) {
+    if (message == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final messenger = _scaffoldMessengerKey.currentState;
+      messenger?.hideCurrentSnackBar();
+      messenger?.showSnackBar(SnackBar(content: Text(message)));
+      ref.read(provider.notifier).state = null;
+    });
   }
 }
 
@@ -65,11 +77,14 @@ class _OfflineBanner extends StatelessWidget {
             children: [
               Icon(Icons.wifi_off, color: colors.onErrorContainer, size: 18),
               const SizedBox(width: 8),
-              Text(
-                noInternetMessage,
-                style: TextStyle(
-                  color: colors.onErrorContainer,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  'You are currently offline. Changes will be synced automatically when internet access is restored.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.onErrorContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

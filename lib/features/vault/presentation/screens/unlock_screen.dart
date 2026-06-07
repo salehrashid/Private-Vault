@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_messages.dart';
-import '../../../../core/network/network_providers.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../controllers/vault_providers.dart';
 
@@ -34,7 +33,6 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
     });
 
     final busy = ref.watch(vaultControllerProvider).isLoading;
-    final online = ref.watch(internetConnectionProvider).valueOrNull != false;
     final biometricSupport = ref.watch(biometricDeviceSupportProvider);
     final hasFingerprintHardware = biometricSupport.maybeWhen(
       data: (support) => support.hasFingerprintHardware,
@@ -85,7 +83,7 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                             ? 'Unlock with fingerprint'
                             : 'Fingerprint unavailable',
                         child: IconButton.filledTonal(
-                          onPressed: busy || !hasFingerprintHardware || !online
+                          onPressed: busy || !hasFingerprintHardware
                               ? null
                               : _unlockWithFingerprint,
                           icon: const Icon(Icons.fingerprint),
@@ -108,7 +106,7 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: busy || !online ? null : _unlock,
+                  onPressed: busy ? null : _unlock,
                   icon: busy
                       ? const SizedBox.square(
                           dimension: 18,

@@ -30,4 +30,6 @@ abstract class VaultRepository {
     required PasswordEntry entry,
     required String targetFolderId,
   });
+  Future<bool> hasPendingChanges(String uid);
+  Future<void> syncPending(String uid);
 }

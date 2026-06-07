@@ -59,7 +59,7 @@ class FolderSidebar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(12),
             child: FilledButton.icon(
-              onPressed: vaultBusy || !online
+              onPressed: vaultBusy
                   ? null
                   : () => showFolderDialog(context, ref),
               icon: const Icon(Icons.create_new_folder),
@@ -231,16 +231,8 @@ class _FolderTile extends ConsumerWidget {
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'rename',
-            enabled: ref.watch(internetConnectionProvider).valueOrNull != false,
-            child: const Text('Rename'),
-          ),
-          PopupMenuItem(
-            value: 'delete',
-            enabled: ref.watch(internetConnectionProvider).valueOrNull != false,
-            child: const Text('Delete'),
-          ),
+          PopupMenuItem(value: 'rename', child: const Text('Rename')),
+          PopupMenuItem(value: 'delete', child: const Text('Delete')),
         ],
       ),
     );

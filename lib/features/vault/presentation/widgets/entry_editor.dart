@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/network/network_providers.dart';
 import '../../domain/password_entry.dart';
 import '../../domain/vault_folder.dart';
 import '../controllers/vault_providers.dart';
@@ -54,7 +53,6 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
   Widget build(BuildContext context) {
     final entry = widget.entry;
     final busy = ref.watch(vaultControllerProvider).isLoading;
-    final online = ref.watch(internetConnectionProvider).valueOrNull != false;
     final folders = ref.watch(vaultFoldersProvider).valueOrNull ?? const [];
 
     return Scaffold(
@@ -74,14 +72,14 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
           if (entry != null && entry.id.isNotEmpty)
             IconButton(
               tooltip: 'Delete',
-              onPressed: busy || !online
+              onPressed: busy
                   ? null
                   : () => deleteEntryWithUndo(context, ref, entry),
               icon: const Icon(Icons.delete_outline),
             ),
           IconButton(
             tooltip: 'Save',
-            onPressed: busy || !online ? null : _save,
+            onPressed: busy ? null : _save,
             icon: const Icon(Icons.save_outlined),
           ),
         ],
@@ -145,7 +143,7 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
                   _MoveEntryMenu(entry: entry, folders: folders),
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: busy || !online ? null : _save,
+                  onPressed: busy ? null : _save,
                   icon: const Icon(Icons.save_outlined),
                   label: const Text('Save entry'),
                 ),
@@ -207,18 +205,16 @@ class _MoveEntryMenu extends ConsumerWidget {
                 DropdownMenuItem(value: folder.id, child: Text(folder.name)),
           )
           .toList(),
-      onChanged: ref.watch(internetConnectionProvider).valueOrNull == false
-          ? null
-          : (folderId) async {
-              if (folderId == null || folderId == entry.folderId) {
-                return;
-              }
-              await ref
-                  .read(vaultControllerProvider.notifier)
-                  .moveEntry(entry, folderId);
-              ref.read(selectedFolderIdProvider.notifier).state = folderId;
-              ref.read(selectedEntryProvider.notifier).state = null;
-            },
+      onChanged: (folderId) async {
+        if (folderId == null || folderId == entry.folderId) {
+          return;
+        }
+        await ref
+            .read(vaultControllerProvider.notifier)
+            .moveEntry(entry, folderId);
+        ref.read(selectedFolderIdProvider.notifier).state = folderId;
+        ref.read(selectedEntryProvider.notifier).state = null;
+      },
     );
   }
 }

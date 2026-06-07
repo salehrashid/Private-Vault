@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -52,6 +54,56 @@ final vaultRefreshControllerProvider =
     AsyncNotifierProvider<VaultRefreshController, void>(
       VaultRefreshController.new,
     );
+
+final vaultSyncMessageProvider = StateProvider<String?>((ref) => null);
+
+final vaultOfflineSyncProvider = Provider<void>((ref) {
+  var syncing = false;
+
+  Future<void> syncWhenReady() async {
+    final auth = ref.read(authStateProvider).valueOrNull;
+    final key = ref.read(unlockedVaultKeyProvider);
+    final online = ref.read(internetConnectionProvider).valueOrNull;
+    if (auth == null || key == null || online != true || syncing) {
+      return;
+    }
+
+    final repository = ref.read(vaultRepositoryProvider);
+    if (!await repository.hasPendingChanges(auth.uid)) {
+      return;
+    }
+
+    syncing = true;
+    ref.read(vaultSyncMessageProvider.notifier).state =
+        'Connection restored. Synchronizing data...';
+    try {
+      await repository.syncPending(auth.uid);
+      ref.invalidate(vaultFoldersProvider);
+      final selectedFolderId = ref.read(selectedFolderIdProvider);
+      if (selectedFolderId != null) {
+        ref.invalidate(folderEntriesProvider(selectedFolderId));
+      }
+      if (!await repository.hasPendingChanges(auth.uid)) {
+        ref.read(vaultSyncMessageProvider.notifier).state =
+            'All changes have been synchronized.';
+      }
+    } finally {
+      syncing = false;
+    }
+  }
+
+  ref.listen(internetConnectionProvider, (previous, next) {
+    if (previous?.valueOrNull == false && next.valueOrNull == true) {
+      unawaited(syncWhenReady());
+    }
+  });
+
+  ref.listen(authStateProvider, (previous, next) => unawaited(syncWhenReady()));
+  ref.listen(
+    unlockedVaultKeyProvider,
+    (previous, next) => unawaited(syncWhenReady()),
+  );
+});
 
 final authVaultSessionCleanupProvider = Provider<void>((ref) {
   ref.listen(authStateProvider, (previous, next) {
@@ -127,7 +179,6 @@ class VaultController extends AsyncNotifier<void> {
   Future<void> unlock(String masterPassword) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await requireInternet(ref);
       final auth = ref.read(authStateProvider).valueOrNull;
       if (auth == null) {
         throw const AppException('Sign in before unlocking the vault.');
@@ -146,7 +197,6 @@ class VaultController extends AsyncNotifier<void> {
   Future<void> unlockWithBiometrics() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await requireInternet(ref);
       final auth = ref.read(authStateProvider).valueOrNull;
       if (auth == null) {
         throw const AppException('Sign in before unlocking the vault.');
@@ -236,8 +286,9 @@ class VaultController extends AsyncNotifier<void> {
       if (auth == null || key == null) {
         throw const AppException('Unlock the vault first.');
       }
-      await requireInternet(ref);
-      await ref.read(authRepositoryProvider).verifyCurrentUser();
+      if (ref.read(internetConnectionProvider).valueOrNull != false) {
+        await ref.read(authRepositoryProvider).verifyCurrentUser();
+      }
       await action(auth.uid, key, ref.read(vaultRepositoryProvider));
     });
   }
