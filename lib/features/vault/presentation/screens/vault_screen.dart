@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/responsive_breakpoints.dart';
 import '../../../../core/errors/error_messages.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../domain/password_entry.dart';
 import '../controllers/vault_providers.dart';
 import '../widgets/entry_editor.dart';
@@ -15,6 +16,14 @@ class VaultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(vaultControllerProvider, (_, next) {
+      final error = next.error;
+      if (error != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(userFacingErrorMessage(error))));
+      }
+    });
+    ref.listen(vaultRefreshControllerProvider, (_, next) {
       final error = next.error;
       if (error != null) {
         ScaffoldMessenger.of(
@@ -110,6 +119,8 @@ class _MobileVaultBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final folderId = selectedFolderId;
+    final refreshBusy = ref.watch(vaultRefreshControllerProvider).isLoading;
+    final online = ref.watch(internetConnectionProvider).valueOrNull != false;
 
     if (selectedEntry != null && folderId != null) {
       return EntryEditor(folderId: folderId, entry: selectedEntry);
@@ -125,6 +136,22 @@ class _MobileVaultBody extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back),
           ),
           title: const Text('Passwords'),
+          actions: [
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: refreshBusy || !online
+                  ? null
+                  : () => ref
+                        .read(vaultRefreshControllerProvider.notifier)
+                        .refresh(),
+              icon: refreshBusy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+            ),
+          ],
         ),
         body: PasswordList(folderId: folderId, showAppBar: false),
         floatingActionButton: FloatingActionButton(

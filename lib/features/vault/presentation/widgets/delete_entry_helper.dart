@@ -5,7 +5,11 @@ import '../../domain/password_entry.dart';
 import '../controllers/vault_providers.dart';
 import 'undo_snackbar.dart';
 
-Future<void> deleteEntryWithUndo(BuildContext context, WidgetRef ref, PasswordEntry entry) async {
+Future<void> deleteEntryWithUndo(
+  BuildContext context,
+  WidgetRef ref,
+  PasswordEntry entry,
+) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -35,7 +39,7 @@ Future<void> deleteEntryWithUndo(BuildContext context, WidgetRef ref, PasswordEn
   final vaultController = ref.read(vaultControllerProvider.notifier);
 
   hiddenEntriesNotifier.update((state) => {...state, entry.id});
-  
+
   if (ref.read(selectedEntryProvider)?.id == entry.id) {
     ref.read(selectedEntryProvider.notifier).state = null;
   }
@@ -52,7 +56,7 @@ Future<void> deleteEntryWithUndo(BuildContext context, WidgetRef ref, PasswordEn
   );
 
   final controller = scaffoldMessenger.showSnackBar(snackBar);
-  
+
   Future.delayed(const Duration(seconds: 4), () {
     try {
       controller.close();

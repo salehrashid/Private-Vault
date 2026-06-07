@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firedart/firedart.dart' as fd;
 
@@ -61,6 +62,40 @@ class FiredartAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<AuthUser?> verifyCurrentUser() async {
+    if (!FirebaseConfig.instance.isConfigured || !fd.FirebaseAuth.initialized) {
+      return null;
+    }
+    if (!_auth.isSignedIn) {
+      return null;
+    }
+    try {
+      final user = await _auth.getUser();
+      return AuthUser(uid: user.id, email: user.email ?? '');
+    } catch (error) {
+      if (error is SocketException || error is TimeoutException) {
+        throw const AppException(
+          'Unable to connect to the server. Please check your internet connection.',
+        );
+      }
+      final message = AuthErrorMapper.canMap(error)
+          ? AuthErrorMapper.toAppException(error).message
+          : '';
+      final accountMissing =
+          error is RangeError ||
+          message == 'No account was found with this email address.' ||
+          message == 'Your session has expired. Please sign in again.';
+      if (accountMissing) {
+        await signOut();
+        throw const AppException(
+          'Your account is no longer available. Please sign in again.',
+        );
+      }
+      throw AuthErrorMapper.toAppException(error);
+    }
+  }
+
+  @override
   Future<void> signOut() async {
     _auth.signOut();
     await SecureAuthTokenStore.clearPersistedSession();
@@ -70,6 +105,11 @@ class FiredartAuthRepository implements AuthRepository {
     try {
       return await action();
     } catch (error) {
+      if (error is SocketException || error is TimeoutException) {
+        throw const AppException(
+          'Unable to connect to the server. Please check your internet connection.',
+        );
+      }
       throw AuthErrorMapper.toAppException(error);
     }
   }

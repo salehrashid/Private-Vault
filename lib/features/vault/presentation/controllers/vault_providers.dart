@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/crypto/vault_crypto_service.dart';
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../../data/biometric_vault_unlock_store.dart';
 import '../../data/firedart_vault_repository.dart';
@@ -47,6 +48,26 @@ final selectedEntryProvider = StateProvider<PasswordEntry?>((ref) => null);
 final hiddenFoldersProvider = StateProvider<Set<String>>((ref) => {});
 final hiddenEntriesProvider = StateProvider<Set<String>>((ref) => {});
 
+final vaultRefreshControllerProvider =
+    AsyncNotifierProvider<VaultRefreshController, void>(
+      VaultRefreshController.new,
+    );
+
+final authVaultSessionCleanupProvider = Provider<void>((ref) {
+  ref.listen(authStateProvider, (previous, next) {
+    final hadUser = previous?.valueOrNull != null;
+    final hasUser = next.valueOrNull != null;
+    if (!hadUser || hasUser) {
+      return;
+    }
+    ref.read(unlockedVaultKeyProvider.notifier).state = null;
+    ref.read(selectedFolderIdProvider.notifier).state = null;
+    ref.read(selectedEntryProvider.notifier).state = null;
+    ref.read(hiddenFoldersProvider.notifier).state = {};
+    ref.read(hiddenEntriesProvider.notifier).state = {};
+  });
+});
+
 final vaultFoldersProvider = StreamProvider<List<VaultFolder>>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
   final key = ref.watch(unlockedVaultKeyProvider);
@@ -72,6 +93,33 @@ final vaultControllerProvider = AsyncNotifierProvider<VaultController, void>(
   VaultController.new,
 );
 
+class VaultRefreshController extends AsyncNotifier<void> {
+  var _refreshing = false;
+
+  @override
+  Future<void> build() async {}
+
+  Future<void> refresh() async {
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await requireInternet(ref);
+      await ref.read(authRepositoryProvider).verifyCurrentUser();
+      ref.invalidate(biometricUnlockAvailableProvider);
+      ref.invalidate(vaultFoldersProvider);
+      final selectedFolderId = ref.read(selectedFolderIdProvider);
+      if (selectedFolderId != null) {
+        ref.invalidate(folderEntriesProvider(selectedFolderId));
+      }
+    });
+    _refreshing = false;
+  }
+}
+
 class VaultController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
@@ -79,6 +127,7 @@ class VaultController extends AsyncNotifier<void> {
   Future<void> unlock(String masterPassword) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      await requireInternet(ref);
       final auth = ref.read(authStateProvider).valueOrNull;
       if (auth == null) {
         throw const AppException('Sign in before unlocking the vault.');
@@ -97,6 +146,7 @@ class VaultController extends AsyncNotifier<void> {
   Future<void> unlockWithBiometrics() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      await requireInternet(ref);
       final auth = ref.read(authStateProvider).valueOrNull;
       if (auth == null) {
         throw const AppException('Sign in before unlocking the vault.');
@@ -186,6 +236,8 @@ class VaultController extends AsyncNotifier<void> {
       if (auth == null || key == null) {
         throw const AppException('Unlock the vault first.');
       }
+      await requireInternet(ref);
+      await ref.read(authRepositoryProvider).verifyCurrentUser();
       await action(auth.uid, key, ref.read(vaultRepositoryProvider));
     });
   }

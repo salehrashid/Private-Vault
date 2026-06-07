@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_messages.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../auth/presentation/auth_controller.dart';
 import '../../../../app/responsive_breakpoints.dart';
 import '../../domain/vault_folder.dart';
@@ -16,11 +17,28 @@ class FolderSidebar extends ConsumerWidget {
     final folders = ref.watch(vaultFoldersProvider);
     final selected = ref.watch(selectedFolderIdProvider);
     final hiddenFolders = ref.watch(hiddenFoldersProvider);
+    final refreshBusy = ref.watch(vaultRefreshControllerProvider).isLoading;
+    final vaultBusy = ref.watch(vaultControllerProvider).isLoading;
+    final online = ref.watch(internetConnectionProvider).valueOrNull != false;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Private Vault'),
         actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: refreshBusy || !online
+                ? null
+                : () => ref
+                      .read(vaultRefreshControllerProvider.notifier)
+                      .refresh(),
+            icon: refreshBusy
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
           IconButton(
             tooltip: 'Lock',
             onPressed: () => ref.read(vaultControllerProvider.notifier).lock(),
@@ -41,43 +59,63 @@ class FolderSidebar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(12),
             child: FilledButton.icon(
-              onPressed: () => showFolderDialog(context, ref),
+              onPressed: vaultBusy || !online
+                  ? null
+                  : () => showFolderDialog(context, ref),
               icon: const Icon(Icons.create_new_folder),
               label: const Text('New folder'),
             ),
           ),
           Expanded(
-            child: folders.when(
-              data: (items) {
-                final visibleItems = items.where((f) => !hiddenFolders.contains(f.id)).toList();
-                final isDesktop = MediaQuery.sizeOf(context).width >=
-                    ResponsiveBreakpoints.desktop;
-                if (isDesktop && visibleItems.isNotEmpty && selected == null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ref.read(selectedFolderIdProvider.notifier).state =
-                        visibleItems.first.id;
-                  });
-                }
-                if (visibleItems.isEmpty) {
-                  return const Center(child: Text('No folders yet'));
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                  itemBuilder: (context, index) {
-                    final folder = visibleItems[index];
-                    return _FolderTile(
-                      folder: folder,
-                      selected: selected == folder.id,
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(vaultRefreshControllerProvider.notifier).refresh(),
+              child: folders.when(
+                data: (items) {
+                  final visibleItems = items
+                      .where((f) => !hiddenFolders.contains(f.id))
+                      .toList();
+                  final isDesktop =
+                      MediaQuery.sizeOf(context).width >=
+                      ResponsiveBreakpoints.desktop;
+                  if (isDesktop &&
+                      visibleItems.isNotEmpty &&
+                      selected == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ref.read(selectedFolderIdProvider.notifier).state =
+                          visibleItems.first.id;
+                    });
+                  }
+                  if (visibleItems.isEmpty) {
+                    return ListView(
+                      children: [
+                        const SizedBox(height: 220),
+                        const Center(child: Text('No folders yet')),
+                      ],
                     );
-                  },
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 4),
-                  itemCount: visibleItems.length,
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(userFacingErrorMessage(error))),
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                    itemBuilder: (context, index) {
+                      final folder = visibleItems[index];
+                      return _FolderTile(
+                        folder: folder,
+                        selected: selected == folder.id,
+                      );
+                    },
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 4),
+                    itemCount: visibleItems.length,
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => ListView(
+                  children: [
+                    const SizedBox(height: 220),
+                    Center(child: Text(userFacingErrorMessage(error))),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -116,7 +154,9 @@ class _FolderTile extends ConsumerWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Delete Folder?'),
-                  content: Text('Are you sure you want to delete "${folder.name}" and all its entries?'),
+                  content: Text(
+                    'Are you sure you want to delete "${folder.name}" and all its entries?',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
@@ -137,13 +177,17 @@ class _FolderTile extends ConsumerWidget {
               if (confirmed != true) return;
               if (!context.mounted) return;
 
-              final hiddenFoldersNotifier = ref.read(hiddenFoldersProvider.notifier);
-              final vaultController = ref.read(vaultControllerProvider.notifier);
+              final hiddenFoldersNotifier = ref.read(
+                hiddenFoldersProvider.notifier,
+              );
+              final vaultController = ref.read(
+                vaultControllerProvider.notifier,
+              );
 
               hiddenFoldersNotifier.update((s) => {...s, folder.id});
               if (ref.read(selectedFolderIdProvider) == folder.id) {
-                 ref.read(selectedFolderIdProvider.notifier).state = null;
-                 ref.read(selectedEntryProvider.notifier).state = null;
+                ref.read(selectedFolderIdProvider.notifier).state = null;
+                ref.read(selectedEntryProvider.notifier).state = null;
               }
 
               final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -158,8 +202,8 @@ class _FolderTile extends ConsumerWidget {
               );
 
               final controller = scaffoldMessenger.showSnackBar(snackBar);
-              
-              // Memaksa snackbar tertutup setelah 4 detik 
+
+              // Memaksa snackbar tertutup setelah 4 detik
               // (mencegah bug hover di desktop yang membuat snackbar diam)
               Future.delayed(const Duration(seconds: 4), () {
                 try {
@@ -170,25 +214,33 @@ class _FolderTile extends ConsumerWidget {
               final reason = await controller.closed;
 
               if (isUndo || reason == SnackBarClosedReason.action) {
-                 hiddenFoldersNotifier.update((s) {
-                   final newS = Set<String>.from(s);
-                   newS.remove(folder.id);
-                   return newS;
-                 });
+                hiddenFoldersNotifier.update((s) {
+                  final newS = Set<String>.from(s);
+                  newS.remove(folder.id);
+                  return newS;
+                });
               } else {
-                 await vaultController.deleteFolder(folder.id);
-                 hiddenFoldersNotifier.update((s) {
-                   final newS = Set<String>.from(s);
-                   newS.remove(folder.id);
-                   return newS;
-                 });
+                await vaultController.deleteFolder(folder.id);
+                hiddenFoldersNotifier.update((s) {
+                  final newS = Set<String>.from(s);
+                  newS.remove(folder.id);
+                  return newS;
+                });
               }
               break;
           }
         },
-        itemBuilder: (context) => const [
-          PopupMenuItem(value: 'rename', child: Text('Rename')),
-          PopupMenuItem(value: 'delete', child: Text('Delete')),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'rename',
+            enabled: ref.watch(internetConnectionProvider).valueOrNull != false,
+            child: const Text('Rename'),
+          ),
+          PopupMenuItem(
+            value: 'delete',
+            enabled: ref.watch(internetConnectionProvider).valueOrNull != false,
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -204,11 +256,11 @@ Future<void> showFolderDialog(
     context: context,
     builder: (context) => _FolderDialog(folder: folder),
   );
-  
+
   if (name == null || name.isEmpty) {
     return;
   }
-  
+
   final vault = ref.read(vaultControllerProvider.notifier);
   folder == null
       ? await vault.createFolder(name)

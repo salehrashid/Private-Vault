@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/error_messages.dart';
+import '../../../core/network/network_providers.dart';
 import '../../../firebase/firebase_config.dart';
 import 'auth_controller.dart';
 
@@ -36,6 +37,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     final busy = ref.watch(authControllerProvider).isLoading;
+    final online = ref.watch(internetConnectionProvider).valueOrNull != false;
 
     return Scaffold(
       body: Center(
@@ -84,7 +86,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
-                  onPressed: busy || !FirebaseConfig.instance.isConfigured
+                  onPressed:
+                      busy || !online || !FirebaseConfig.instance.isConfigured
                       ? null
                       : () {
                           final controller = ref.read(

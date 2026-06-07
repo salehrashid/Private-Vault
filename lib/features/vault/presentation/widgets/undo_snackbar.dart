@@ -10,18 +10,12 @@ SnackBar buildUndoSnackBar({
     content: _AnimatedUndoContent(message: message, duration: duration),
     duration: duration,
     behavior: SnackBarBehavior.floating,
-    action: SnackBarAction(
-      label: 'Undo',
-      onPressed: onUndo,
-    ),
+    action: SnackBarAction(label: 'Undo', onPressed: onUndo),
   );
 }
 
 class _AnimatedUndoContent extends StatelessWidget {
-  const _AnimatedUndoContent({
-    required this.message,
-    required this.duration,
-  });
+  const _AnimatedUndoContent({required this.message, required this.duration});
 
   final String message;
   final Duration duration;
@@ -37,7 +31,9 @@ class _AnimatedUndoContent extends StatelessWidget {
           controller: CountDownController(),
           width: 24,
           height: 24,
-          ringColor: Theme.of(context).colorScheme.inversePrimary.withValues(alpha: 0.2),
+          ringColor: Theme.of(
+            context,
+          ).colorScheme.inversePrimary.withValues(alpha: 0.2),
           ringGradient: null,
           fillColor: Theme.of(context).colorScheme.inversePrimary,
           fillGradient: null,
