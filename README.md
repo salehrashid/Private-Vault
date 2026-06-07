@@ -1,4 +1,4 @@
-# Private Password Manager
+# Private Vault
 
 A private, cross-platform Flutter password manager for Android, Linux, and Windows.
 

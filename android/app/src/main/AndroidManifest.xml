@@ -6,7 +6,7 @@
         android:maxSdkVersion="28"/>
 
     <application
-        android:label="password_manager"
+        android:label="Private Vault"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

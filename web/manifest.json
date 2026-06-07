@@ -1,11 +1,11 @@
 {
-    "name": "password_manager",
-    "short_name": "password_manager",
+    "name": "Private Vault",
+    "short_name": "Private Vault",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Private Vault password manager.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
