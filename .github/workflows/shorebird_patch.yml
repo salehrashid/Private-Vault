@@ -1,0 +1,41 @@
+name: Shorebird Patch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  patch_android_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          token: ${{ secrets.SHOREBIRD_TOKEN }}
+      - uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          release-version: latest
+      - uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: linux
+          release-version: latest
+
+  patch_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          token: ${{ secrets.SHOREBIRD_TOKEN }}
+      - uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: windows
+          release-version: latest
