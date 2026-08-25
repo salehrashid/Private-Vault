@@ -97,6 +97,13 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
+# Bundle the application icon alongside the executable so the GTK runner can
+# use it both from a local Flutter build and from the installed Debian package.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../app-icon.png"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  RENAME "app-icon.png"
+  COMPONENT Runtime)
+
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
