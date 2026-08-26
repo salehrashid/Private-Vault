@@ -46,6 +46,7 @@ dependencies:
   circular_countdown_timer: ^0.2.4
   local_auth: ^3.0.1
   shorebird_code_push: ^2.0.0
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

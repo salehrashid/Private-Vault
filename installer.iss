@@ -4,7 +4,7 @@
 #define MyAppExeName "private_vault.exe"
 
 [Setup]
-AppId={{D01716B7-43DC-46CE-BE99-AC3E6C3D042A}
+AppId={{C25F5A75-8499-4950-907F-056023030258}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}

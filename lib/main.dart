@@ -4,10 +4,13 @@ import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 import 'app/password_manager_app.dart';
 import 'firebase/firebase_bootstrap.dart';
+import 'platform_window.dart'
+    if (dart.library.io) 'platform_window_io.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseBootstrap.initialize();
+  await initializeDesktopWindow();
   runApp(
     const ProviderScope(
       child: ShorebirdUpdateGate(
