@@ -34,10 +34,12 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
 
     final busy = ref.watch(vaultControllerProvider).isLoading;
     final biometricSupport = ref.watch(biometricDeviceSupportProvider);
+    final support = biometricSupport.valueOrNull;
     final hasFingerprintHardware = biometricSupport.maybeWhen(
       data: (support) => support.hasFingerprintHardware,
       orElse: () => false,
     );
+    final unlockMethodName = support?.unlockMethodName ?? 'fingerprint';
 
     return Scaffold(
       appBar: AppBar(
@@ -80,8 +82,8 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                       padding: const EdgeInsetsDirectional.only(end: 8),
                       child: Tooltip(
                         message: hasFingerprintHardware
-                            ? 'Unlock with fingerprint'
-                            : 'Fingerprint unavailable',
+                            ? 'Unlock with $unlockMethodName'
+                            : '$unlockMethodName unavailable',
                         child: IconButton.filledTonal(
                           onPressed: busy || !hasFingerprintHardware
                               ? null
@@ -104,6 +106,14 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                   ),
                   onSubmitted: (_) => _unlock(),
                 ),
+                if (support?.usesWindowsHello == true &&
+                    !hasFingerprintHardware) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Set up Windows Hello PIN and fingerprint in Windows Settings > Accounts > Sign-in options.',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: busy ? null : _unlock,

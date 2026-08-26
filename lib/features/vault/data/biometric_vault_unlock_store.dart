@@ -23,6 +23,23 @@ class BiometricVaultUnlockStore {
   final LocalAuthentication _localAuth;
 
   Future<BiometricDeviceSupport> deviceSupport() async {
+    // This custom channel is implemented only by Android. Windows uses
+    // local_auth_windows, which talks to Windows Hello.
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      try {
+        final supported = await _localAuth.isDeviceSupported();
+        return BiometricDeviceSupport(
+          platform: 'windows',
+          hasFingerprintHardware: supported,
+          hasBiometricHardware: supported,
+          canAuthenticateWithLocalAuth: supported,
+          enrolledBiometrics: supported ? const ['windowsHello'] : const [],
+        );
+      } catch (_) {
+        return const BiometricDeviceSupport(platform: 'windows');
+      }
+    }
+
     var nativeSupport = const BiometricDeviceSupport();
     try {
       final nativeResult = await _deviceBiometricsChannel
@@ -36,16 +53,6 @@ class BiometricVaultUnlockStore {
 
     try {
       final supported = await _localAuth.isDeviceSupported();
-      if (defaultTargetPlatform == TargetPlatform.windows) {
-        return nativeSupport.copyWith(
-          platform: 'windows',
-          hasFingerprintHardware: supported,
-          hasBiometricHardware: supported,
-          canAuthenticateWithLocalAuth: supported,
-          enrolledBiometrics: supported ? const ['windowsHello'] : const [],
-        );
-      }
-
       final canCheck = await _localAuth.canCheckBiometrics;
       final biometrics = await _localAuth.getAvailableBiometrics();
       return nativeSupport.copyWith(
@@ -185,6 +192,11 @@ class BiometricDeviceSupport {
   final int? biometricAuthStatus;
   final bool canAuthenticateWithLocalAuth;
   final List<String> enrolledBiometrics;
+
+  bool get usesWindowsHello => platform == 'windows';
+
+  String get unlockMethodName =>
+      usesWindowsHello ? 'Windows Hello' : 'fingerprint';
 
   bool get hasEnrolledBiometrics =>
       hasEnrolledBiometricsFromAndroid || enrolledBiometrics.isNotEmpty;
